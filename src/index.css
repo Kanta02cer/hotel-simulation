@@ -1,0 +1,9 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #0f172a; color: #e2e8f0; }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; } ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+input[type=range] { accent-color: #3b82f6; }
+input[type=number], select { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; width: 100%; font-size: 13px; }
+input[type=number]:focus, select:focus { outline: none; border-color: #3b82f6; }
+.tooltip-container { position: relative; display: inline-block; }
+.tooltip-text { visibility: hidden; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
+.tooltip-container:hover .tooltip-text { visibility: visible; }
