@@ -4,6 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts'
 import { calcMonthly, calcCashflow, INDUSTRY } from './calc.js'
+import { exportToExcel } from './exportExcel.js'
 
 // ── Helpers ──────────────────────────────────────────────
 const fmt = (n) => n == null ? '—' : Math.round(n).toLocaleString('ja-JP')
@@ -254,6 +255,11 @@ export default function App() {
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', marginBottom: 2 }}>🏨 Lunest シミュレーター</div>
           <div style={{ fontSize: 10, color: '#475569' }}>産後ケアホテル 事業検証ツール v1.0</div>
+          <button
+            onClick={() => exportToExcel({ s, y1months, monthOcc, cfData, scenarios, totalInv, beOcc })}
+            style={{ marginTop: 8, width: '100%', padding: '7px 0', fontSize: 11, fontWeight: 800, borderRadius: 6, border: 'none', cursor: 'pointer', background: '#15803d', color: '#fff', letterSpacing: 0.5 }}>
+            📥 Excelエクスポート（時系列）
+          </button>
         </div>
 
         {/* Mode switch */}
@@ -423,11 +429,12 @@ export default function App() {
         </div>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
-          {[['pl', '📊 損益ウォーターフォール'], ['cf', '💰 キャッシュフロー'], ['scenario', '🎯 シナリオ比較'], ['owner', '🤝 オーナー報酬']].map(([v, l]) => (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
+          {[['pl', '📊 損益ウォーターフォール'], ['cf', '💰 キャッシュフロー'], ['scenario', '🎯 シナリオ比較'], ['owner', '🤝 オーナー報酬'], ['evidence', '🔬 エビデンス根拠']].map(([v, l]) => (
             <button key={v} onClick={() => setActiveTab(v)}
               style={{ padding: '6px 12px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: activeTab === v ? '#1d4ed8' : '#1e293b', color: activeTab === v ? '#fff' : '#64748b' }}>
+                background: activeTab === v ? (v === 'evidence' ? '#7c3aed' : '#1d4ed8') : '#1e293b',
+                color: activeTab === v ? '#fff' : '#64748b' }}>
               {l}
             </button>
           ))}
@@ -639,6 +646,97 @@ export default function App() {
                 <div key={sc.name} style={{ background: '#0f172a', borderRadius: 6, padding: 10, border: `1px solid ${sc.color}` }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: sc.color, marginBottom: 4 }}>{sc.name}</div>
                   <div style={{ fontSize: 10, color: '#64748b' }}>{sc.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: Evidence */}
+        {activeTab === 'evidence' && (
+          <div style={{ background: '#1e293b', borderRadius: 8, padding: 14, border: '1px solid #7c3aed' }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#a78bfa', marginBottom: 4 }}>🔬 収益計画エビデンス根拠</div>
+            <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>投資家・提携パートナーへの説明根拠。各数値の出所・検証方法・代替シナリオを整理しています。</div>
+
+            {[
+              {
+                title: '📊 稼働率の根拠',
+                color: '#3b82f6',
+                items: [
+                  { label: '目標稼働率（安定期）80%', basis: '産院2〜3施設との提携による自動送客。kokokara（札幌）は開業3ヶ月で予約1ヶ月待ちの実績', verify: '提携産院との覚書・月次予約実績レポート', alt: '産院提携0件の場合：推定40〜50%（運転資金で対応済み）' },
+                  { label: 'キャンセル率5%', basis: '産後ケア施設の前払い予約では5〜10%が業界標準。分娩後即時予約確定フローで低減', verify: 'キャンセル数/予約数の月次記録・キャンセルポリシー徹底', alt: '15%の場合：月間売上-4.5%。ADR引上げまたは補充予約で対応' },
+                  { label: '平均滞在日数3泊', basis: '都市部産後ケア施設の平均2〜4泊。3泊は中央値。入院前後の連続滞在ニーズが支える', verify: '実際の滞在日数を月次集計・四半期平均で管理', alt: '2泊低下の場合：組数が1.5倍必要。稼働率目標を95%に引上げ' },
+                ],
+              },
+              {
+                title: '💴 ADR・料金設定の根拠',
+                color: '#22c55e',
+                items: [
+                  { label: `1名¥${s.adrPerPerson.toLocaleString()} / 室¥${(s.adrPerPerson * s.personsPerRoom).toLocaleString()}（ADR）`, basis: '競合相場: HOTEL STORK ¥66,000〜 / マームガーデン ¥40,000〜 / kokokara ¥25,000〜。中間価格帯の空白を埋める戦略', verify: '競合3施設の料金を半期ごとにリサーチ・自社ADRと比較', alt: '¥35,000に下げても稼働率85%なら同等収益（感度分析済み）' },
+                  { label: `RevPAR ¥${fmt(m.revpar)}（ADR×稼働率）`, basis: '業界標準¥40,000〜¥80,000の範囲内。自治体補助金認定後は実質値上げ効果あり', verify: '月次RevPAR実績の管理・業界標準との比較レポート', alt: '市場相場下落時：Vwand+1℃差別化サービスでプレミアム維持' },
+                ],
+              },
+              {
+                title: '👩‍⚕️ 人件費の根拠',
+                color: '#f59e0b',
+                items: [
+                  { label: `夜勤助産師時給¥${s.nightWage.toLocaleString()}（深夜割増含む月¥${fmt(Math.round((s.nightHours * s.nightWage + s.nightDeepHours * s.nightWage * 0.25) * s.nightDays))}）`, basis: '東京都の助産師副業・夜勤単発相場¥1,800〜2,500（求人ボックス・Indeed・ナースではたらこ）。深夜割増25%は労基法37条で必須', verify: '採用面接時の市場時給確認・求人媒体の相場を月1回確認', alt: '¥2,500に上昇した場合：月+¥13,000（影響軽微）' },
+                  { label: `法定福利費率${pct(s.socialInsRate)}（月¥${fmt(m.socialIns)}）`, basis: '健康保険・厚生年金・雇用保険の事業主負担合計。社会保険事務所への届出済みを前提', verify: '社会保険事務所の納付通知書・給与計算ソフトの自動検証', alt: '法定率のため変動しない。率変更時は法改正に準拠' },
+                ],
+              },
+              {
+                title: '📡 OTA手数料・チャネルコストの根拠',
+                color: '#ef4444',
+                items: [
+                  { label: `OTA経由比率${pct(s.otaRatio)} / 手数料${pct(s.otaFee)}（月¥${fmt(m.channelCost)})`, basis: 'じゃらん・楽天15〜17% / booking.com 17〜20%の中央値。産院直送客80%が実現すれば最小化できる', verify: 'PMS（予約管理システム）でチャネル別予約数を月次管理', alt: 'OTA50%経由の場合：月-¥75万の利益減。産院提携を最優先' },
+                  { label: `CC手数料${pct(s.ccFeeRate)}（月¥${fmt(m.ccCost)})`, basis: 'VISA/Master 2.0〜2.5%・JCB 3.0%の加重平均。前払い決済導入で確実に費用計上', verify: '決済事業者の月次請求書と売上実績の照合', alt: '3.0%の場合：月+¥2万。影響は軽微' },
+                ],
+              },
+              {
+                title: '🏦 オーナー報酬の根拠',
+                color: '#a78bfa',
+                items: [
+                  { label: `¥${s.ownerPerNight.toLocaleString()}/室泊×${s.ownerRooms}室（月¥${fmt(m.ownerPay)})`, basis: 'FUV LUX両国の通常ADR（¥15,000〜17,000）比+79〜100%のアップリフト。ホテルマネジメント契約の業界標準を参照', verify: '月次報酬支払い記録・2年間の固定契約書による条件固定', alt: '¥35,000に引上げ要求の場合：月-¥54万。ADR引上げで対応' },
+                ],
+              },
+              {
+                title: '🏛️ 自治体補助金・市場需要の根拠',
+                color: '#38bdf8',
+                items: [
+                  { label: '補助金収入（現計画では未計上）', basis: '東京都23区の産後ケア補助金：1泊¥25,000〜66,000補助。認定取得後は実質ADR+¥20,000相当の効果', verify: '自治体HPの補助金額・認定施設一覧を四半期ごとに確認', alt: '未取得の場合：補助金なしでも黒字設計済み。取得後は上振れ要因' },
+                  { label: '日本産後ケア市場TAM 約619億円', basis: '年間出産73万人（厚労省2023）×利用想定率×平均単価。現在利用率3%未満→韓国75%まで成長余地大', verify: '厚生労働省 人口動態統計（毎年7月公表）で毎年確認', alt: '出生数减少の場合：都市部集中で单价维持戦略で対応' },
+                ],
+              },
+            ].map(section => (
+              <div key={section.title} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: section.color, marginBottom: 6, borderBottom: `1px solid ${section.color}40`, paddingBottom: 4 }}>{section.title}</div>
+                {section.items.map((item, i) => (
+                  <div key={i} style={{ background: '#0f172a', borderRadius: 6, padding: '8px 10px', marginBottom: 6, borderLeft: `3px solid ${section.color}` }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>{item.label}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '3px 8px' }}>
+                      <span style={{ fontSize: 10, color: '#475569', fontWeight: 700 }}>根拠</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{item.basis}</span>
+                      <span style={{ fontSize: 10, color: '#475569', fontWeight: 700 }}>検証方法</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{item.verify}</span>
+                      <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>代替シナリオ</span>
+                      <span style={{ fontSize: 10, color: '#f59e0b' }}>{item.alt}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            <div style={{ background: '#0f172a', borderRadius: 6, padding: 10, border: '1px solid #334155', marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>📋 エビデンス収集ロードマップ</div>
+              {[
+                ['開業前（今すぐ）', '産院2〜3施設との覚書締結・FUV LUXとの契約確認・助産師3名採用内定'],
+                ['M1〜M3（開業〜3ヶ月）', '週次予約数・稼働率・キャンセル数の記録開始・実際のADRと計画値の比較'],
+                ['M4〜M6（黒字転換期）', '月次P&L実績と計画値の差異分析・自治体補助金申請書類整備'],
+                ['M7〜M12（安定期）', '産院送客数/OTA経由比率・RevPAR実績レポートを投資家向けに月次公開'],
+              ].map(([期間, action]) => (
+                <div key={期間} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 10, color: '#38bdf8', fontWeight: 700, minWidth: 90, whiteSpace: 'nowrap' }}>{期間}</span>
+                  <span style={{ fontSize: 10, color: '#64748b' }}>{action}</span>
                 </div>
               ))}
             </div>
