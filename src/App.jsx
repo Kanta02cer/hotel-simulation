@@ -3,7 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts'
-import { calcMonthly, calcCashflow, INDUSTRY } from './calc.js'
+import { calcMonthly, calcRecovery, INDUSTRY } from './calc.js'
 import { exportToExcel } from './exportExcel.js'
 
 // ── Helpers ──────────────────────────────────────────────
@@ -101,6 +101,8 @@ const DEFAULT = {
   allRooms: 6,
   personsPerRoom: 2,
   avgStay: 3,
+  // 修正①: 利用人数の加重平均（1名:70% / 2名:30%）
+  singleOccRatio: 0.70,
   // Rate
   adrPerPerson: 40000,
   bfRate: 0.70,
@@ -137,17 +139,19 @@ const DEFAULT = {
   insurance: 30000,
   marketing: 100000,
   otherFixed: 30000,
+  // 修正③: 施設利用料（HiH=0 ※オーナー報酬が賃料相当。自社物件では要設定）
+  rentFee: 0,
   // Owner
   ownerPerNight: 30000,
   ownerRooms: 6,
   // Investment
   invInterior: 500000,
   invEquipment: 705000,
+  equipDeprecMonths: 24,   // 修正⑤: 償却期間
   invVwand: 100000,
   invLicense: 200000,
   invMarketing: 300000,
   invWorking: 7000000,
-  // Scenario mode
   mode: 'base',
 }
 
@@ -182,33 +186,57 @@ export default function App() {
   // ── Investment ─────────────────────────────────────────
   const totalInv = s.invInterior + s.invEquipment + s.invVwand + s.invLicense + s.invMarketing + s.invWorking
 
-  // ── CF ─────────────────────────────────────────────────
+  // ── 修正②: CF（現金残高＋累計純利益を分離して正確に表示）──────
   const cfData = useMemo(() => {
-    let cash = s.invWorking
-    let invRemain = totalInv - s.invWorking
-    return y1months.map((m, i) => {
-      if (i === 0) cash -= invRemain
-      cash += m.netProfit
-      return { label: m.label, cf: Math.round(m.netProfit), cumCash: Math.round(cash) }
+    const pureInv = totalInv - s.invWorking   // 運転資金を除く純投資額
+    let cash = s.invWorking - (totalInv - s.invWorking)  // 開業時点の現金
+    let cumNet = 0
+    return y1months.map((m) => {
+      cash   += m.netProfit
+      cumNet += m.netProfit
+      const recovered = cumNet >= pureInv     // 純利益累計で純投資額を回収したか
+      return {
+        label: m.label,
+        cf: Math.round(m.netProfit),
+        cumCash: Math.round(cash),
+        cumNet: Math.round(cumNet),
+        pureInv: Math.round(pureInv),
+        recovered,
+        recoveryRate: Math.min(cumNet / pureInv, 1.0),
+      }
     })
   }, [y1months, totalInv, s.invWorking])
 
   // ── Break-even ─────────────────────────────────────────
   const beOcc = useMemo(() => m.breakEvenOcc, [m])
 
-  // ── Scenario comparison ────────────────────────────────
+  // ── 修正④: シナリオ比較（Y1実績値＝月別稼働率×各シナリオ倍率）──
   const scenarios = useMemo(() => {
     const defs = [
-      { label: '悲観', color: '#ef4444', occM: 0.75, adrM: 0.95 },
-      { label: '標準', color: '#3b82f6', occM: 1.00, adrM: 1.00 },
-      { label: '楽観', color: '#22c55e', occM: 1.15, adrM: 1.05 },
+      { label: '悲観', color: '#ef4444', occM: 0.75, adrM: 0.95,
+        note: '産院提携0件・OTA50%・稼働最悪ケース' },
+      { label: '標準', color: '#3b82f6', occM: 1.00, adrM: 1.00,
+        note: '現計画通り（産院2〜3件提携・OTA20%）' },
+      { label: '楽観', color: '#22c55e', occM: 1.15, adrM: 1.05,
+        note: '産院5件以上・SNS拡散・補助金認定取得' },
     ]
     return defs.map(d => {
-      const ss = { ...s, occupancy: Math.min(s.occupancy * d.occM, 1.0), adrPerPerson: Math.round(s.adrPerPerson * d.adrM) }
+      const ss = {
+        ...s,
+        occupancy: Math.min(s.occupancy * d.occM, 1.0),
+        adrPerPerson: Math.round(s.adrPerPerson * d.adrM),
+      }
       const r = calcMonthly(ss)
-      return { ...d, ...r, annual: { rev: r.revTotal * 12, net: r.netProfit * 12 } }
+      // Y1実績：月別稼働率にシナリオ倍率を掛けて合算（立ち上がり期を正確に反映）
+      let y1cumNet = 0
+      const y1net = monthOcc.reduce((sum, occ) => {
+        const mr = calcMonthly({ ...ss, occupancy: Math.min(occ * d.occM, 1.0) })
+        y1cumNet += mr.netProfit
+        return y1cumNet
+      }, 0)
+      return { ...d, ...r, y1net: Math.round(y1cumNet) }
     })
-  }, [s])
+  }, [s, monthOcc])
 
   // ── Sensitivity curve ──────────────────────────────────
   const sensCurve = useMemo(() => {
@@ -218,19 +246,33 @@ export default function App() {
     })
   }, [s])
 
-  // ── Warnings ───────────────────────────────────────────
+  // ── 修正③⑤⑥: 警告ロジック強化 ─────────────────────────
   const warnings = useMemo(() => {
     const ws = []
+    // ADR整合性チェック（修正①）
+    const displayADR = m.adr
+    if (Math.abs(displayADR - s.adrPerPerson * s.personsPerRoom) > s.adrPerPerson * 0.3) {
+      ws.push({ level: 'yellow', text: `加重平均ADR（¥${fmt(displayADR)}）と2名フルADR（¥${fmt(s.adrPerPerson*s.personsPerRoom)}）に乖離があります。1名利用比率${pct(s.singleOccRatio)}を確認してください。` })
+    }
+    // 賃料ゼロの説明（修正③）
+    if (s.rentFee === 0) {
+      ws.push({ level: 'yellow', text: 'HiHモデルのため施設利用料=¥0ですが、オーナー報酬（¥' + fmt(m.ownerPay) + '/月）が実質賃料に相当します。投資家への説明時に明示してください。' })
+    }
     if (beOcc > 0.60) ws.push({ level: 'red', text: `損益分岐稼働率が${pct(beOcc)}と高水準（目標60%以下）。固定費削減またはADR引き上げを検討してください。` })
-    if (s.otaRatio > 0 && s.otaFee === 0) ws.push({ level: 'yellow', text: 'OTA比率が設定されていますがOTA手数料が未入力です。売上の15〜20%が費用として発生します。' })
+    if (s.otaRatio > 0 && s.otaFee === 0) ws.push({ level: 'red', text: 'OTA比率が設定されていますがOTA手数料が未入力です。売上の最大20%が費用として発生します。' })
     if (m.laborRate > 0.30) ws.push({ level: 'yellow', text: `人件費比率が${pct(m.laborRate)}と高水準（目標30%以下）。スタッフ配置を見直してください。` })
-    if (cfData.some(c => c.cumCash < 0)) ws.push({ level: 'red', text: '月次キャッシュが資金ショートするタイミングがあります。運転資金の追加確保を検討してください。' })
-    if (s.nightWage < 1163) ws.push({ level: 'red', text: '夜勤時給が東京都最低賃金（¥1,163）を下回っています。' })
+    if (cfData.some(c => c.cumCash < 0)) ws.push({ level: 'red', text: '現金残高が資金ショートするタイミングがあります。運転資金の追加確保を検討してください。' })
+    if (s.nightWage < 1163) ws.push({ level: 'red', text: '夜勤時給が東京都最低賃金（¥1,163）を下回っています。労基法違反リスクあり。' })
     if (s.ownerPerNight < 30000) ws.push({ level: 'yellow', text: 'オーナー報酬が¥30,000/室泊を下回っています。提携条件の見直しが必要な可能性があります。' })
     if (m.gopRate < 0.30) ws.push({ level: 'yellow', text: `GOP率が${pct(m.gopRate)}と業界標準（30〜40%）を下回っています。` })
-    if (beOcc <= 0.60 && m.gopRate >= 0.30 && m.laborRate <= 0.30) ws.push({ level: 'green', text: '主要指標はすべて業界標準を満たしています。事業成立性は高いと判断されます。' })
+    // 修正⑥: 最悪ケース稼働率と悲観シナリオの定義を統一
+    const worstOcc = Math.min(...monthOcc) * 0.75
+    if (worstOcc < beOcc) ws.push({ level: 'yellow', text: `悲観シナリオ最低稼働率${pct(worstOcc)}が損益分岐${pct(beOcc)}を下回る月があります。開業初期の赤字月数を確認してください。` })
+    if (beOcc <= 0.60 && m.gopRate >= 0.30 && m.laborRate <= 0.30 && s.rentFee >= 0) {
+      ws.push({ level: 'green', text: '主要KPIはすべて業界標準内です。ただし施設利用料（賃料）がオーナー報酬に包含されている構造を投資家に説明できる状態にしてください。' })
+    }
     return ws
-  }, [beOcc, m, s, cfData])
+  }, [beOcc, m, s, cfData, monthOcc])
 
   // ── Waterfall data ─────────────────────────────────────
   const waterfallData = useMemo(() => [
@@ -240,8 +282,9 @@ export default function App() {
     { name: '消耗品', value: -Math.round(m.consumable), type: 'neg' },
     { name: 'OTA手数料', value: -Math.round(m.channelCost), type: 'neg' },
     { name: 'CC手数料', value: -Math.round(m.ccCost), type: 'neg' },
-    { name: '固定費他', value: -(Math.round(m.linen || 0) + Math.round(s.system) + Math.round(s.insurance) + Math.round(s.marketing) + Math.round(s.otherFixed)), type: 'neg' },
-    { name: 'オーナー報酬', value: -Math.round(m.ownerPay), type: 'neg' },
+    { name: '備品償却', value: -Math.round(m.equipDeprec), type: 'neg' },         // 修正⑤
+    { name: '固定費他', value: -(Math.round(m.linen||0)+s.system+s.insurance+s.marketing+s.otherFixed+(s.rentFee||0)), type: 'neg' },
+    { name: 'オーナー報酬\n(賃料相当)', value: -Math.round(m.ownerPay), type: 'neg' }, // 修正③
     { name: '営業利益', value: Math.round(m.opProfit), type: m.opProfit >= 0 ? 'total' : 'neg' },
   ], [m, s])
 
@@ -288,9 +331,24 @@ export default function App() {
           <SliderField label="1名あたり宿泊料（ADR/名）" value={s.adrPerPerson} min={20000} max={100000} step={1000}
             onChange={v => set('adrPerPerson', v)} displayFmt={v => '¥' + v.toLocaleString()}
             tooltip="競合相場: HOTEL STORK ¥66,000〜 / マームガーデン ¥40,000〜 / kokokara ¥25,000〜" />
-          <div style={{ display: 'flex', justifyContent: 'space-between', background: '#0f172a', borderRadius: 5, padding: '6px 8px', marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: '#64748b' }}>ADR（室単価）</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#38bdf8' }}>¥{(s.adrPerPerson * s.personsPerRoom).toLocaleString()}</span>
+          {/* 修正①: 1名利用比率→加重平均ADRを計算 */}
+          <SliderField label="1名利用の比率（母子のみ）" value={s.singleOccRatio} min={0} max={1.0} step={0.05}
+            onChange={v => set('singleOccRatio', v)} displayFmt={pct}
+            tooltip="母子2名のみ利用=1名利用。サポーター同伴=複数名利用。都市部では70%が1名利用が実態" />
+          {/* 加重平均ADR表示ボックス */}
+          <div style={{ background: '#0f172a', borderRadius: 5, padding: '7px 10px', marginTop: 2, border: '1px solid #334155' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span style={{ fontSize: 10, color: '#64748b' }}>1名利用時ADR</span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>¥{(s.adrPerPerson * 1).toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span style={{ fontSize: 10, color: '#64748b' }}>{s.personsPerRoom}名利用時ADR</span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>¥{(s.adrPerPerson * s.personsPerRoom).toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #334155', paddingTop: 3 }}>
+              <span style={{ fontSize: 10, color: '#38bdf8', fontWeight: 700 }}>加重平均ADR（PL使用値）</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#38bdf8' }}>¥{Math.round(s.adrPerPerson * (s.singleOccRatio * 1 + (1 - s.singleOccRatio) * s.personsPerRoom)).toLocaleString()}</span>
+            </div>
           </div>
           <SliderField label="朝食提供率" value={s.bfRate} min={0} max={1} step={0.05}
             onChange={v => set('bfRate', v)} displayFmt={pct}
@@ -332,17 +390,28 @@ export default function App() {
           <SliderField label="法定福利費率" value={s.socialInsRate} min={0.10} max={0.20} step={0.005}
             onChange={v => set('socialInsRate', v)} displayFmt={pct}
             tooltip="社会保険・雇用保険等。標準15%（事業主負担）" />
-          <div style={{ background: '#0f172a', borderRadius: 5, padding: '6px 8px', marginTop: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 10, color: '#64748b' }}>基本人件費</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>¥{fmt(m.baseLabor)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-              <span style={{ fontSize: 10, color: '#64748b' }}>法定福利費</span>
-              <span style={{ fontSize: 12, color: '#f59e0b' }}>¥{fmt(m.socialIns)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2, borderTop: '1px solid #334155', paddingTop: 2 }}>
-              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>人件費合計</span>
+          {/* 修正⑦: 人件費内訳を明示 */}
+          <div style={{ background: '#0f172a', borderRadius: 5, padding: '7px 10px', marginTop: 4, border: '1px solid #334155' }}>
+            <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, marginBottom: 5 }}>人件費内訳（月次）</div>
+            {[
+              ['夜勤助産師', `${s.nightHours}h×¥${s.nightWage}+深夜割増 × ${s.nightDays}日`, m.nightMonth],
+              ['日勤助産師', `${s.dayHours}h×¥${s.dayWage} × ${s.dayDays}日`, m.dayMonth],
+              ['ケアスタッフ', `${s.careHours}h×¥${s.careWage} × ${s.careDays}日`, m.careMonth],
+              ['基本給計', '', m.baseLabor],
+              [`法定福利費（${pct(s.socialInsRate)}）`, '社保・雇用保険', m.socialIns],
+            ].map(([label, detail, val]) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3,
+                borderTop: label === '法定福利費（' + pct(s.socialInsRate) + '）' ? '1px dashed #334155' : 'none',
+                paddingTop: label === '法定福利費（' + pct(s.socialInsRate) + '）' ? 3 : 0 }}>
+                <div>
+                  <span style={{ fontSize: 10, color: label.includes('計') ? '#94a3b8' : '#64748b', fontWeight: label.includes('計') ? 700 : 400 }}>{label}</span>
+                  {detail && <div style={{ fontSize: 9, color: '#475569' }}>{detail}</div>}
+                </div>
+                <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: label.includes('計') ? 700 : 400 }}>¥{fmt(val)}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #475569', paddingTop: 4, marginTop: 2 }}>
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 800 }}>人件費合計</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#ef4444' }}>¥{fmt(m.laborTotal)}</span>
             </div>
           </div>
@@ -364,6 +433,21 @@ export default function App() {
           <NumField label="マーケティング費/月" value={s.marketing} onChange={v => set('marketing', v)} suffix="円"
             tooltip="SNS広告・産院営業・Google広告等。産院提携確立までは増額が必要" />
           <NumField label="その他固定費/月" value={s.otherFixed} onChange={v => set('otherFixed', v)} suffix="円" />
+          {/* 修正③: 施設利用料（HiHではオーナー報酬が代替。自社物件では要設定） */}
+          <NumField label="施設利用料・賃料/月" value={s.rentFee} onChange={v => set('rentFee', v)} suffix="円"
+            tooltip="HiHモデルでは通常0円（オーナー報酬が賃料相当）。自社物件転用後は維持費を入力" />
+          {s.rentFee === 0 && (
+            <div style={{ background: '#422006', border: '1px solid #f59e0b', borderRadius: 4, padding: '5px 8px', fontSize: 9, color: '#f59e0b' }}>
+              ⚠️ HiHモデルでは賃料=¥0ですが、オーナー報酬（¥{fmt(m.ownerPay)}/月）が実質賃料に相当します。投資家説明時に必ず注記してください。
+            </div>
+          )}
+          {/* 修正⑤: 備品償却 */}
+          <NumField label="備品償却期間（ヶ月）" value={s.equipDeprecMonths} onChange={v => set('equipDeprecMonths', v)} suffix="ヶ月"
+            tooltip="備品¥705,000を何ヶ月で償却するか。標準24ヶ月" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 10 }}>
+            <span style={{ color: '#64748b' }}>備品月次償却額</span>
+            <span style={{ color: '#f59e0b', fontWeight: 700 }}>¥{fmt(m.equipDeprec)}/月</span>
+          </div>
         </Section>
 
         <Section title="🏦 オーナー報酬設定" defaultOpen={false}>
@@ -496,50 +580,62 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB: Cashflow */}
+        {/* TAB: Cashflow — 修正② 投資回収表を正確に */}
         {activeTab === 'cf' && (
           <div style={{ background: '#1e293b', borderRadius: 8, padding: 14, border: '1px solid #334155' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>月次キャッシュフロー推移（Y1）</div>
-            <ResponsiveContainer width="100%" height={260}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>月次キャッシュフロー推移（Y1）</div>
+            {/* 定義注記 */}
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 5, padding: '6px 10px', fontSize: 10, color: '#64748b', marginBottom: 10 }}>
+              📌 <strong style={{ color: '#94a3b8' }}>投資回収の定義：</strong>「累計純利益 ≥ 純投資額（初期投資 - 運転資金）」で回収完了と判定。
+              運転資金（¥{fmt(s.invWorking)})は事業終了時に回収可能な資金のため除外。純投資額＝¥{fmt(totalInv - s.invWorking)}。
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
               <ComposedChart data={cfData} margin={{ top: 5, right: 10, bottom: 5, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} />
                 <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={v => (v / 10000).toFixed(0) + '万'} />
-                <Tooltip formatter={v => '¥' + Math.round(v).toLocaleString()} contentStyle={{ background: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                <Tooltip formatter={(v, n) => ['¥' + Math.round(v).toLocaleString(), n]} contentStyle={{ background: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
-                <Bar dataKey="cf" name="月次CF" fill="#3b82f6" radius={3} />
-                <Line dataKey="cumCash" name="資金残高" stroke="#22c55e" strokeWidth={2} dot={false} />
+                <Bar dataKey="cf" name="月次純利益CF" fill="#3b82f6" radius={3} />
+                <Line dataKey="cumNet" name="累計純利益" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                <Line dataKey="cumCash" name="現金残高" stroke="#22c55e" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
 
             <div style={{ marginTop: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>初期投資・回収サマリー</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                 <KpiCard label="初期投資合計" value={yen(totalInv)} color="#f59e0b" />
-                <KpiCard label="Y1純利益合計" value={yen(y1.net)} color={y1.net >= 0 ? '#22c55e' : '#ef4444'} />
-                <KpiCard label="運転資金（確保）" value={yen(s.invWorking)} color="#38bdf8" />
+                <KpiCard label="純投資額（回収対象）" value={yen(totalInv - s.invWorking)} color="#f59e0b"
+                  sub="初期投資 - 運転資金" />
+                <KpiCard label="Y1累計純利益" value={yen(y1.net)} color={y1.net >= 0 ? '#22c55e' : '#ef4444'} />
+                <KpiCard label="Y1回収率" value={pct(Math.max(0, y1.net / (totalInv - s.invWorking)))}
+                  color={y1.net >= (totalInv - s.invWorking) ? '#22c55e' : '#f59e0b'} />
               </div>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 6 }}>月次キャッシュ詳細</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 6 }}>月次キャッシュ詳細（修正済み・回収判定正確化）</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
                   <tr style={{ background: '#0f172a' }}>
-                    {['月', '月次CF', '累計資金残高', '状態'].map(h => (
+                    {['月', '月次純利益', '累計純利益', '現金残高', '回収率', '状態'].map(h => (
                       <th key={h} style={{ padding: '4px 8px', color: '#64748b', textAlign: 'right', borderBottom: '1px solid #334155' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {cfData.map((c, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? '#0f172a' : 'transparent' }}>
+                    <tr key={i} style={{ background: c.recovered ? '#052e16' : (i % 2 === 0 ? '#0f172a' : 'transparent'), border: c.recovered && !cfData[i-1]?.recovered ? '1px solid #22c55e' : 'none' }}>
                       <td style={{ padding: '3px 8px', color: '#94a3b8' }}>{c.label}</td>
                       <td style={{ padding: '3px 8px', textAlign: 'right', color: c.cf >= 0 ? '#22c55e' : '#ef4444' }}>¥{fmt(c.cf)}</td>
+                      <td style={{ padding: '3px 8px', textAlign: 'right', color: c.cumNet >= 0 ? '#f59e0b' : '#ef4444', fontWeight: 700 }}>¥{fmt(c.cumNet)}</td>
                       <td style={{ padding: '3px 8px', textAlign: 'right', color: c.cumCash >= 0 ? '#38bdf8' : '#ef4444', fontWeight: 700 }}>¥{fmt(c.cumCash)}</td>
+                      <td style={{ padding: '3px 8px', textAlign: 'right', color: c.recoveryRate >= 1 ? '#22c55e' : '#f59e0b' }}>
+                        {(Math.max(0, c.recoveryRate) * 100).toFixed(1)}%</td>
                       <td style={{ padding: '3px 8px', textAlign: 'right', color: c.cumCash >= 0 ? '#22c55e' : '#ef4444' }}>
-                        {c.cumCash >= 0 ? '✓ 安全' : '⚠ 要注意'}
+                        {c.recovered ? '✓ 回収完了' : c.cumCash >= 0 ? '回収中' : '⚠ 要注意'}
                       </td>
                     </tr>
                   ))}
@@ -549,27 +645,39 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB: Scenario */}
+        {/* TAB: Scenario — 修正④ Y1実績vs年間安定値を明確に区別 */}
         {activeTab === 'scenario' && (
           <div style={{ background: '#1e293b', borderRadius: 8, padding: 14, border: '1px solid #334155' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>3シナリオ並列比較</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>3シナリオ並列比較</div>
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 5, padding: '6px 10px', fontSize: 10, color: '#64748b', marginBottom: 10 }}>
+              📌 <strong style={{ color: '#94a3b8' }}>注記：</strong>「Y1純利益合計」は月別稼働率（立ち上がり期込み）の合算実績値。「安定月純利益×12」は稼働率80%固定の理論値であり別物です。両者は同じ表に混在させないでください。
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
               {scenarios.map(sc => (
                 <div key={sc.label} style={{ background: '#0f172a', borderRadius: 8, padding: 12, border: `1px solid ${sc.color}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: sc.color, marginBottom: 8 }}>{sc.label}シナリオ</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: sc.color, marginBottom: 4 }}>{sc.label}シナリオ</div>
+                  <div style={{ fontSize: 9, color: '#475569', marginBottom: 8 }}>{sc.note}</div>
                   {[
-                    ['稼働率', pct(sc.effectiveOcc)],
-                    ['ADR', yen(sc.adr)],
-                    ['月間売上', yen(sc.revTotal)],
+                    ['稼働率（安定期）', pct(sc.effectiveOcc)],
+                    ['加重平均ADR', yen(sc.adr)],
+                    ['月間売上（安定月）', yen(sc.revTotal)],
                     ['GOP率', pct(sc.gopRate)],
-                    ['月間純利益', yen(sc.netProfit)],
-                    ['年間純利益', yen(sc.annual.net)],
+                    ['月間純利益（安定月）', yen(sc.netProfit)],
+                    ['─────', '─────'],
+                    ['Y1純利益合計★実績', yen(sc.y1net)],
+                    ['安定月×12（参考値）', yen(sc.netProfit * 12)],
+                    ['─────', '─────'],
                     ['オーナー報酬/月', yen(sc.ownerPay)],
                     ['損益分岐稼働率', pct(sc.breakEvenOcc)],
                   ].map(([l, v]) => (
-                    <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: '#64748b' }}>{l}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#e2e8f0' }}>{v}</span>
+                    <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3,
+                      borderTop: l === '─────' ? '1px dashed #334155' : 'none', paddingTop: l === '─────' ? 3 : 0 }}>
+                      {l !== '─────' && <>
+                        <span style={{ fontSize: 10, color: l.includes('★') ? '#f59e0b' : l.includes('参考') ? '#475569' : '#64748b',
+                          fontWeight: l.includes('★') ? 700 : 400, fontStyle: l.includes('参考') ? 'italic' : 'normal' }}>{l}</span>
+                        <span style={{ fontSize: 11, fontWeight: l.includes('★') ? 800 : 700,
+                          color: l.includes('参考') ? '#475569' : '#e2e8f0' }}>{v}</span>
+                      </>}
                     </div>
                   ))}
                 </div>
@@ -790,6 +898,8 @@ export default function App() {
           { label: '━ 保険料', val: s.insurance, color: '#ef4444' },
           { label: '━ マーケ費', val: s.marketing, color: '#ef4444' },
           { label: '━ その他', val: s.otherFixed, color: '#ef4444' },
+          { label: '━ 備品償却費', val: m.equipDeprec, color: '#ef4444' },
+          { label: '━ 施設利用料', val: m.rentFee, color: '#ef4444' },
           { label: '━ オーナー報酬', val: m.ownerPay, color: '#a78bfa' },
           { label: '▶ 営業利益', val: m.opProfit, color: m.opProfit >= 0 ? '#22c55e' : '#ef4444', bold: true },
           { label: '▶ 純利益（税後）', val: m.netProfit, color: m.netProfit >= 0 ? '#22c55e' : '#ef4444', bold: true },
