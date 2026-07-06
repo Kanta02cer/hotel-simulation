@@ -61,7 +61,7 @@ const CHAPTERS=[
 // ══════════ 1. COVER ══════════
 {
   const s=pres.addSlide(); s.background={color:WHITE}
-  wordmark(s, ML, 0.55, 1.15)
+  s.addImage({path:'kc_logo.png', x:ML, y:0.5, w:2.35, h:0.63})
   s.addText('社内稟議資料 ／ 新規事業案件',{x:ML, y:2.5, w:CW, h:0.4, fontFace:JP, fontSize:13, color:CORAL, bold:true, margin:0})
   s.addText('NLCS神戸 学生寮STOプロジェクト',{x:ML, y:2.95, w:CW, h:0.85, fontFace:JP, fontSize:36, bold:true, color:INK, margin:0})
   s.addText('当社（KC）参画に関する稟議 ― 教育 × 不動産 × STO への参入',{x:ML, y:3.85, w:CW, h:0.55, fontFace:JP, fontSize:18, color:INK, margin:0})

@@ -58,7 +58,7 @@ const CHAPTERS=[
 // ══════════ 1. COVER ══════════
 {
   const s=pres.addSlide(); s.background={color:WHITE}
-  wordmark(s, ML, 0.55, 1.15)
+  s.addImage({path:'kc_logo.png', x:ML, y:0.5, w:2.35, h:0.63})
   // category label
   s.addText('社内検討資料 ／ 投資委員会付議前 事前評価',{x:ML, y:2.55, w:CW, h:0.4, fontFace:JP, fontSize:13, color:CORAL, bold:true, margin:0})
   s.addText('産後ケアホテル「Lunest」',{x:ML, y:3.0, w:CW, h:0.9, fontFace:JP, fontSize:40, bold:true, color:INK, margin:0})
