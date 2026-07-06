@@ -27,7 +27,8 @@ function footer(slide,n){
     fontSize:7.5, color:GRAY, charSpacing:1, valign:'middle', margin:0})
   slide.addText('社外秘 ／ Copyright © Kasumigaseki Capital Co., Ltd. All Rights Reserved.',
     {x:W-6.2, y:6.98, w:5.5, h:0.28, fontFace:JP, fontSize:7.5, color:GRAY, align:'right', valign:'middle', margin:0})
-  slide.addText(String(n),{x:W-0.65, y:6.98, w:0.35, h:0.28, fontFace:SERIF, fontSize:9, color:GRAY, align:'right', valign:'middle', margin:0})
+  // n==='' の扉ページは番号非表示。それ以外は物理ページ番号を自動採番。
+  if(n!=='') slide.addText(String(pres.slides.length),{x:W-0.65, y:6.98, w:0.35, h:0.28, fontFace:SERIF, fontSize:9, color:GRAY, align:'right', valign:'middle', margin:0})
 }
 function head(slide,title,lead){
   slide.addText(title,{x:ML, y:0.42, w:CW, h:0.55, fontFace:JP, fontSize:22, bold:true, color:INK, valign:'middle', margin:0})
@@ -80,7 +81,7 @@ const CHAPTERS=[
   const s=pres.addSlide(); s.background={color:WHITE}
   s.addText('Index',{x:ML, y:0.55, w:CW, h:0.7, fontFace:SERIF, fontSize:30, bold:true, color:INK, margin:0})
   s.addShape(pres.shapes.LINE,{x:ML, y:1.32, w:CW, h:0, line:{color:GRAYLT, width:1}})
-  const pages=[3,6,7,8,9,10,11,12,13]
+  const pages=[3,6,8,11,13,15,17,19,21]
   let y=1.62
   CHAPTERS.forEach((c,i)=>{
     badge(s, ML, y, '0'+(i+1), 0.46)
@@ -227,6 +228,37 @@ divider(3)
   box(ML+10.2, by, 1.73, bh, RED, RED, '教育支援性を\n持つ投資商品', WHITE, 9.5)
   s.addText('投資単位の小口化と投資家層の拡大、社会的意義の付与が可能。',{x:ML, y:by+bh+0.1, w:CW, h:0.35, fontFace:JP, fontSize:10.5, color:INK, bold:true, margin:0})
   footer(s,7)
+}
+
+// ══════════ STO市場と先行事例（第3章 追加ページ）══════════
+{
+  const s=newContent('STO市場と先行事例','国内のST（デジタル証券）市場は拡大局面。学生レジデンスを対象とした不動産STは既に存在するため「日本初」は用いず「国内先進事例」と位置付ける。')
+  s.addText('市場の拡大（出典付き参考値）',{x:ML, y:1.85, w:6, h:0.32, fontFace:JP, fontSize:12, bold:true, color:INK, margin:0})
+  const stats=[
+    ['国内ST 発行累計','約2,628','億円 ／ 68件（Progmat・2025年8月）',RED],
+    ['Progmat 発行額シェア','約62','％（国内最大の組成基盤）',CORAL],
+    ['公募ST市場 FY2025','約2倍','約1,684→約3,333億円（BOOSTRY総括）',INK],
+  ]
+  let y=2.2
+  stats.forEach(k=>{
+    s.addShape(pres.shapes.RECTANGLE,{x:ML, y, w:5.7, h:1.0, fill:{color:WHITE}, line:{color:GRAYLT,width:1}, shadow:sh()})
+    s.addText(k[0],{x:ML+0.2, y:y+0.12, w:5.3, h:0.3, fontFace:JP, fontSize:10.5, color:GRAY, margin:0})
+    s.addText([{text:k[1],options:{fontSize:24,bold:true,color:k[3]}},{text:' '+k[2],options:{fontSize:10,color:GRAY}}],
+      {x:ML+0.2, y:y+0.42, w:5.3, h:0.5, fontFace:JP, valign:'middle', margin:0})
+    y+=1.12
+  })
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:6.95, y:1.85, w:CW-6.25, h:4.55, rectRadius:0.06, fill:{color:GRAYXL}, line:{color:GRAYLT,width:1}})
+  s.addText('先行事例と本件の位置付け',{x:7.2, y:1.98, w:5.5, h:0.32, fontFace:JP, fontSize:12, bold:true, color:RED, margin:0})
+  s.addText([
+    {text:'国内初の公募不動産ST：ケネディクス渋谷神南（2021年）', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'アセット多様化：ホテル・旅館・物流・住宅／福祉貢献型など', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'学生レジデンスST：2024年1月に既発（約35億円／AM=DREAM・三菱UFJ信託・大和証券）→「日本初」は主張不可', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'本件の位置付け：国際ボーディングスクール学生寮は事例の限られる先進的アセットタイプ', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'流動性：セカンダリ（ODX「START」・ASTOMO）は稼働も出来高は限定的 → 出口は保守的に想定', options:{bullet:{indent:14}}},
+  ],{x:7.2, y:2.35, w:CW-6.75, h:3.9, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addText('※ 数値は出典（Progmat／BOOSTRY／各社開示）に基づく参考値。最終稟議版で一次レポートを再確認。',
+    {x:ML, y:5.95, w:5.7, h:0.5, fontFace:JP, fontSize:8.5, color:GRAY, valign:'top', lineSpacingMultiple:1.03, margin:0})
+  footer(s,9)
 }
 
 // ══════════ 07 KC参画の意義とメリット（divider 04 → content）══════════
@@ -383,7 +415,7 @@ divider(9)
 {
   const s=newContent('Appendix ― 表現上の注意・免責','対外発信時の表現、および本資料の位置付けに関する注記。')
   s.addText('「日本初」表現についての注意',{x:ML, y:1.7, w:8, h:0.35, fontFace:JP, fontSize:12, bold:true, color:RED, margin:0})
-  s.addText('既存STO市場では住宅・物流・温泉施設等の不動産STO事例があり、学生用不動産STOも過去に確認されている。「学生寮STOが日本初」と断定するのは避ける。',
+  s.addText('国内ST市場では住宅・物流・ホテル・温泉等に加え、学生レジデンスを対象とした不動産STも2024年1月に既発（約35億円／AM=DREAM・三菱UFJ信託・大和証券）。「学生寮STOが日本初」との断定は避け、「国内先進事例」と位置付ける。',
     {x:ML, y:2.05, w:CW, h:0.6, fontFace:JP, fontSize:11, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
   s.addText('推奨表現',{x:ML, y:2.75, w:6, h:0.3, fontFace:JP, fontSize:11, bold:true, color:INK, margin:0})
   s.addText([
@@ -392,8 +424,8 @@ divider(9)
     {text:'教育×不動産×STOの新たな取り組み／Foundation構想と連動した教育インフラ投資モデル', options:{bullet:{indent:14}}},
   ],{x:ML, y:3.1, w:CW, h:1.1, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.1, margin:0})
   s.addText('販売面の留意',{x:ML, y:4.3, w:8, h:0.3, fontFace:JP, fontSize:11, bold:true, color:INK, margin:0})
-  s.addText('STOは公募が前提となるため、保護者・富裕層等への個別販売には別スキームの検討が必要（STO事業者の見解）。投資家販売の可否は初回ヒアリングで確認する。',
-    {x:ML, y:4.62, w:CW, h:0.6, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addText('不動産STは金商法上「電子記録移転有価証券表示権利等」（第一項有価証券）に該当し、第一種金融商品取引業者を通じ一般投資家へ公募可能（発行開示・勧誘規制の対象）。ただし特定の保護者・富裕層への個別勧誘は私募規制・スキーム設計の検討を要する。可否は初回ヒアリング・法務で確認する。',
+    {x:ML, y:4.62, w:CW, h:0.75, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
   s.addShape(pres.shapes.LINE,{x:ML, y:5.5, w:CW, h:0, line:{color:GRAYLT, width:0.75}})
   s.addText('免責：本資料は社内稟議・検討用の初期資料であり、投資実行の決裁や投資勧誘を目的とするものではない。案件規模・利回り・収益等の数値は初期情報に基づく仮置きであり、STO事業者・八光エルアールへの確認により変更される。',
     {x:ML, y:5.65, w:CW, h:0.8, fontFace:JP, fontSize:9, italic:true, color:GRAY, valign:'top', lineSpacingMultiple:1.1, margin:0})
