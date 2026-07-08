@@ -48,28 +48,29 @@ function kctable(slide,rows,opts){
 const hcell = (t,fill=GRAY,align='left') => ({text:t,options:{bold:true,color:WHITE,fill:{color:fill},fontFace:JP,align,valign:'middle'}})
 
 const CHAPTERS=[
-  '稟議事項（決裁のお願い）',
+  '稟議事項（緒方様 ご判断用）',
   '案件概要',
   'なぜSTOを組み合わせるか',
   'KC参画の意義とメリット',
-  '事業性・収益の論点',
-  '参画パターンと推奨スタンス',
+  '事業性・収益の論点（仮試算）',
+  '事業性検証としての収支',
+  'ストラクチャリングとKC経済性',
   'リスクと対応方針',
   '補助金制約と確認済事項',
-  'スケジュールと決裁',
+  '5カ年スケジュールと決裁',
 ]
 
 // ══════════ 1. COVER ══════════
 {
   const s=pres.addSlide(); s.background={color:WHITE}
   s.addImage({path:'kc_logo.png', x:ML, y:0.5, w:2.35, h:0.63})
-  s.addText('社内稟議資料 ／ 新規事業案件',{x:ML, y:2.5, w:CW, h:0.4, fontFace:JP, fontSize:13, color:CORAL, bold:true, margin:0})
+  s.addText('社内稟議資料 ／ 新規事業案件 ／ 緒方様 ご判断用',{x:ML, y:2.5, w:CW, h:0.4, fontFace:JP, fontSize:13, color:CORAL, bold:true, margin:0})
   s.addText('NLCS神戸 学生寮STOプロジェクト',{x:ML, y:2.95, w:CW, h:0.85, fontFace:JP, fontSize:36, bold:true, color:INK, margin:0})
   s.addText('当社（KC）参画に関する稟議 ― 教育 × 不動産 × STO への参入',{x:ML, y:3.85, w:CW, h:0.55, fontFace:JP, fontSize:18, color:INK, margin:0})
   s.addShape(pres.shapes.LINE,{x:ML, y:4.6, w:4.2, h:0, line:{color:RED, width:2}})
   s.addText([
     {text:'2026年7月6日', options:{fontSize:11, color:INK, bold:true, breakLine:true}},
-    {text:'起案：新規事業／井上', options:{fontSize:10, color:INK, breakLine:true}},
+    {text:'起案：新規事業／井上　　決裁：緒方 様', options:{fontSize:10, color:INK, breakLine:true}},
     {text:'霞ヶ関キャピタル株式会社', options:{fontSize:10.5, color:INK, breakLine:true}},
     {text:'東証プライム（証券コード：3498）', options:{fontSize:9, color:GRAY}},
   ],{x:W-4.9, y:5.95, w:4.2, h:1.1, fontFace:JP, align:'right', lineSpacingMultiple:1.15, margin:0})
@@ -81,40 +82,40 @@ const CHAPTERS=[
   const s=pres.addSlide(); s.background={color:WHITE}
   s.addText('Index',{x:ML, y:0.55, w:CW, h:0.7, fontFace:SERIF, fontSize:30, bold:true, color:INK, margin:0})
   s.addShape(pres.shapes.LINE,{x:ML, y:1.32, w:CW, h:0, line:{color:GRAYLT, width:1}})
-  const pages=[3,6,8,11,13,19,21,23,25]
-  let y=1.62
+  const pages=[3,6,8,11,13,19,21,24,26,28]
+  let y=1.5
   CHAPTERS.forEach((c,i)=>{
-    badge(s, ML, y, '0'+(i+1), 0.46)
-    s.addText(c,{x:ML+0.72, y:y, w:9.5, h:0.46, fontFace:JP, fontSize:15, bold:true, color:INK, valign:'middle', margin:0})
-    s.addText(String(pages[i]).padStart(2,'0'),{x:W-1.4, y:y, w:0.7, h:0.46, fontFace:SERIF, fontSize:13, color:GRAY, align:'right', valign:'middle', margin:0})
-    s.addShape(pres.shapes.LINE,{x:ML, y:y+0.56, w:CW, h:0, line:{color:GRAYXL, width:0.75}})
-    y+=0.585
+    badge(s, ML, y, String(i+1).padStart(2,'0'), 0.42)
+    s.addText(c,{x:ML+0.68, y:y, w:9.5, h:0.42, fontFace:JP, fontSize:14, bold:true, color:INK, valign:'middle', margin:0})
+    s.addText(String(pages[i]).padStart(2,'0'),{x:W-1.4, y:y, w:0.7, h:0.42, fontFace:SERIF, fontSize:12, color:GRAY, align:'right', valign:'middle', margin:0})
+    s.addShape(pres.shapes.LINE,{x:ML, y:y+0.5, w:CW, h:0, line:{color:GRAYXL, width:0.75}})
+    y+=0.52
   })
   footer(s,2)
 }
 
 // ══════════ 03 稟議事項（決裁のお願い）══════════
 {
-  const s=newContent('稟議事項 ― ご決裁いただきたい事項','本件は投資実行の決裁ではなく、当社が本プロジェクトに「アレンジャー／スキーム検討支援」として参画し、次段階の検討を進めることの承認を求めるものである。')
+  const s=newContent('稟議事項 ― 緒方様にご判断いただきたいこと','投資実行の決裁ではなく、今月中に「本格検討に進むか／見送るか」をご判断いただくための資料。当社は初期はアレンジャー参画を想定し、次段階で投資判断を別途付議する。')
   const items=[
     ['1','本件を当社の新規事業案件として正式に検討・推進すること','教育×不動産×STOの実証案件として位置付け'],
     ['2','当社の初期スタンスを「アレンジャー型（スキーム検討支援）」とすること','資金を大きく張らず、関係者を繋ぎPR・知見を獲得する低リスク形態'],
     ['3','STO事業者・外部専門家（弁護士等）へのヒアリング／相談の実施','組成可否・CF・担保・補助金・販売可否・金商法論点の精査'],
     ['4','対外開示・プレスリリースの可能性を含む案件として扱うこと','「国内先進事例」としての発信可能性を検証'],
   ]
-  let y=1.85
+  let y=1.8
   items.forEach(it=>{
-    s.addShape(pres.shapes.RECTANGLE,{x:ML, y, w:CW, h:0.92, fill:{color:WHITE}, line:{color:GRAYLT,width:1}, shadow:sh()})
-    badge(s, ML+0.22, y+0.24, it[0], 0.44)
-    s.addText(it[1],{x:ML+0.95, y:y+0.1, w:7.4, h:0.72, fontFace:JP, fontSize:13, bold:true, color:INK, valign:'middle', margin:0})
-    s.addText(it[2],{x:ML+8.5, y:y+0.1, w:CW-8.7, h:0.72, fontFace:JP, fontSize:10, color:GRAY, valign:'middle', margin:0})
-    y+=1.02
+    s.addShape(pres.shapes.RECTANGLE,{x:ML, y, w:CW, h:0.86, fill:{color:WHITE}, line:{color:GRAYLT,width:1}, shadow:sh()})
+    badge(s, ML+0.22, y+0.21, it[0], 0.44)
+    s.addText(it[1],{x:ML+0.95, y:y+0.07, w:7.4, h:0.72, fontFace:JP, fontSize:13, bold:true, color:INK, valign:'middle', margin:0})
+    s.addText(it[2],{x:ML+8.5, y:y+0.07, w:CW-8.7, h:0.72, fontFace:JP, fontSize:10, color:GRAY, valign:'middle', margin:0})
+    y+=0.96
   })
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:y+0.02, w:CW, h:0.62, rectRadius:0.05, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:y+0.02, w:CW, h:0.98, rectRadius:0.05, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
   s.addText([
-    {text:'※ 投資・貸付の実行判断は本稟議の対象外。', options:{bold:true, color:RED}},
-    {text:'　CF・担保・補助金制約・STO販売可否が明確化した後、次段階で別途付議する。', options:{color:INK}},
-  ],{x:ML+0.25, y:y+0.02, w:CW-0.5, h:0.62, fontFace:JP, fontSize:11, valign:'middle', margin:0})
+    {text:'ゴール：今月中に「本格検討に進む／見送る」の最終判断。', options:{bold:true, color:RED, breakLine:true, paraSpaceAfter:4}},
+    {text:'ご判断の段階：①検討継続の可否　②STO事業者への本格相談の可否　③KCとしての資金関与の可否（③は次段階で別途付議）。', options:{color:INK}},
+  ],{x:ML+0.25, y:y+0.02, w:CW-0.5, h:0.98, fontFace:JP, fontSize:10.5, valign:'middle', lineSpacingMultiple:1.05, margin:0})
   footer(s,3)
 }
 
@@ -153,10 +154,10 @@ const CHAPTERS=[
 // ── divider ──
 function divider(n){
   const s=pres.addSlide(); s.background={color:WHITE}
-  badge(s, ML, 2.9, '0'+n, 0.9)
+  badge(s, ML, 2.9, String(n).padStart(2,'0'), 0.9)
   s.addText(CHAPTERS[n-1],{x:ML+1.25, y:2.9, w:10.5, h:0.9, fontFace:JP, fontSize:26, bold:true, color:INK, valign:'middle', margin:0})
   s.addShape(pres.shapes.LINE,{x:ML+1.25, y:3.95, w:5.5, h:0, line:{color:GRAYLT, width:1}})
-  s.addText(String(n).padStart(2,'0')+' / 09',{x:ML+1.25, y:4.02, w:3, h:0.35, fontFace:SERIF, fontSize:11, color:CORAL, margin:0})
+  s.addText(String(n).padStart(2,'0')+' / 10',{x:ML+1.25, y:4.02, w:3, h:0.35, fontFace:SERIF, fontSize:11, color:CORAL, margin:0})
   footer(s,'')
   return s
 }
@@ -393,27 +394,83 @@ divider(5)
   footer(s,9)
 }
 
-// ══════════ 09 参画パターンと推奨スタンス（divider 06 → content）══════════
+// ══════════ 09 事業性検証としての収支（divider 06 → content）══════════
 divider(6)
 {
-  const s=newContent('KCの参画パターンと推奨スタンス','関与形態はリスク・リターンに応じて4案。現時点ではリスクの低いアレンジャー型から着手し、論点精査後に投資・貸付判断を行うのが安全。')
+  const s=newContent('事業性検証｜寮単体 簡易PL（枠）と前提','KCフィーが未定のため確定値ではなくシナリオ前提で提示。寮単体PLの枠と、各項目の確度（確認済／仮置き／要確認）を明確にする。')
+  const OK=CORAL, TENT=GRAY, TBD=RED
+  const st=(t,c)=>({text:t,options:{bold:true,color:c,align:'center',fontFace:JP}})
+  s.addText('寮単体 簡易PL（枠）',{x:ML, y:1.8, w:6, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
   const rows=[
-    [hcell('パターン'), hcell('内容'), hcell('メリット／論点'), hcell('初期採否',MAROON)],
-    ['A：アレンジャー型','資金を大きく張らず、STO事業者・八光LR・投資家を繋ぐ',{text:'低リスクでPR・知見を獲得',options:{}}, {text:'◎ 推奨',options:{bold:true,color:RED,fill:{color:PEACHLT}}}],
-    ['B：ブリッジ型','KCが先行資金を入れ、後続のSTO販売で一部回収','推進力は高いが販売未達時の出口確認が必要','△ 次段階'],
-    ['C：貸付型','KCが貸付人として関与','収益設計しやすいが担保・補助金事前承認が論点','△ 次段階'],
-    ['D：出資型','KCがSPC等に出資','アップサイドを取れるが議決権・みなし大企業規定が論点','△ 次段階'],
+    [hcell('項目'), hcell('内容'), hcell('確度',MAROON)],
+    ['売上（寮）','最大 約3.85億円（350万×110名）', st('仮置き',TENT)],
+    ['　課金対象','110名・教員5名の扱いは論点', st('要確認',TBD)],
+    ['▲ 寮運営原価','食費・人件費・水光熱・修繕・保険等', st('未確認',TBD)],
+    ['＝ NOI','―', st('未確認',TBD)],
+    ['▲ 八光LR利益','八光LRが残す利益水準', st('未確認',TBD)],
+    ['＝ 分配可能CF','投資家へ回せるCF', st('要算定',TBD)],
+    ['▲ ST手数料','約4％（調整可）', st('仮置き',TENT)],
+    [{text:'→ 投資家分配',options:{bold:true}}, {text:'年7％＝調達20億で1.4億円',options:{bold:true}}, st('前提',OK)],
   ]
-  kctable(s,rows,{x:ML, y:1.85, w:CW, colW:[2.5,4.2,4.0,1.23], rowH:[0.45,0.72,0.72,0.72,0.72], fontSize:10.5, align:'left'})
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:5.55, w:CW, h:0.95, rectRadius:0.05, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
-  s.addText('初期スタンスの推奨',{x:ML+0.25, y:5.65, w:5, h:0.3, fontFace:JP, fontSize:11, bold:true, color:RED, margin:0})
-  s.addText('「アレンジャー型＋STO事業者ヒアリング主導」から開始。投資・貸付判断は、CF・担保・補助金・STO販売可否が明確になった後に次段階で行う。',
-    {x:ML+0.25, y:5.95, w:CW-0.5, h:0.5, fontFace:JP, fontSize:11, color:INK, valign:'top', margin:0})
-  footer(s,10)
+  kctable(s,rows,{x:ML, y:2.15, w:6.35, colW:[1.85,3.4,1.1], rowH:[0.38,0.42,0.42,0.42,0.4,0.42,0.42,0.42,0.44], fontSize:9.5, align:'left'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.2, y:1.8, w:CW-6.5, h:4.55, rectRadius:0.06, fill:{color:PEACHLT}, line:{color:CORAL,width:1}, shadow:sh()})
+  s.addText('前提の確度',{x:7.45, y:1.92, w:5, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:RED, margin:0})
+  s.addText([
+    {text:'確認済：', options:{bold:true, color:CORAL}},
+    {text:'顧客単価350万円／収容110名（前提）／利回り7％前提／手数料4％（調整可）／STO規模20億円ミニマム', options:{color:INK, breakLine:true, paraSpaceAfter:8}},
+    {text:'仮置き：', options:{bold:true, color:GRAY}},
+    {text:'満室時売上上限3.85億円／手数料控除', options:{color:INK, breakLine:true, paraSpaceAfter:8}},
+    {text:'要確認：', options:{bold:true, color:RED}},
+    {text:'課金対象人数（教員5名）／寮運営原価／NOI／八光LR利益／不足時補填／寮施工費（EF棟）', options:{color:INK, breakLine:true, paraSpaceAfter:8}},
+    {text:'※ 「年700万円」の定義（売上／NOI／分配後）が確定すれば、上記PLの枠が埋まる。', options:{italic:true, color:GRAY}},
+  ],{x:7.45, y:2.3, w:CW-7.0, h:3.95, fontFace:JP, fontSize:10, valign:'top', lineSpacingMultiple:1.08, margin:0})
+  footer(s,9)
 }
 
-// ══════════ 10 リスクと対応方針（divider 07 → content）══════════
+// ══════════ 10 ストラクチャリングとKC経済性（divider 07 → content×2）══════════
 divider(7)
+// 7a 参画3案
+{
+  const s=newContent('参画ストラクチャー ― 3案比較','KCの参画主体は未確定。六甲山山上事業全体にはKC本体、学生寮部分はKCリートでの参画可能性。現時点はアレンジャー型から着手を推奨。')
+  const rows=[
+    [hcell('案'), hcell('内容'), hcell('KCメリット'), hcell('主な論点',MAROON)],
+    [{text:'A：KCアレンジャー型　◎推奨',options:{bold:true}},'資金を大きく張らず、デジタル証券・八光LR・投資家の調整役','フィー収入・PR・STO知見獲得','キャッシュメリットが小さい可能性'],
+    ['B：KCブリッジ型','一時的に資金を出し、後からSTO・リート・投資家資金で回収','収益機会・案件主導権・スピード','担保・回収時期・補助金制約'],
+    ['C：KCリート／SPC参画型','学生寮部分をKCリート／別SPCで保有・関与','アセット化・継続収益・横展開','リート適格性・利回り・寮運営リスク'],
+  ]
+  kctable(s,rows,{x:ML, y:1.8, w:CW, colW:[2.7,4.0,2.6,2.63], rowH:[0.42,0.95,0.95,0.95], fontSize:10, align:'left'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:5.2, w:CW, h:1.3, rectRadius:0.06, fill:{color:GRAYXL}, line:{color:GRAYLT,width:1}})
+  s.addText('STO設計の論点（デジタル証券 確認済）',{x:ML+0.25, y:5.3, w:8, h:0.3, fontFace:JP, fontSize:11, bold:true, color:RED, margin:0})
+  s.addText('物件20億円がミニマム／補助対象外資産に限定した組成は可能／借地権も条件次第で裏付け可／学生寮＋任意追加施設の一本化は可能／固定賃のみは厳しくCPI・固都税連動が必要。 → 論点：①学生寮単体で規模が足りるか ②追加施設で20億規模にするか ③変動賃料をどう入れるか。',
+    {x:ML+0.25, y:5.62, w:CW-0.5, h:0.85, fontFace:JP, fontSize:10, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  footer(s,9)
+}
+// 7b KC経済性シナリオ + リート確認待ち
+{
+  const s=newContent('KC経済性シナリオ（KC報酬は未定・仮置き）','KCフィー／報酬水準はリート側・KC側で議論中のため未定。立場別に収益の考え方を整理し、リート側確認後に数値を確定する。')
+  const rows=[
+    [hcell('ケース'), hcell('KCの立場'), hcell('KC収益の考え方'), hcell('数値',MAROON)],
+    ['Case 1','アレンジャー','調達額 × 一定料率のアレンジフィー', {text:'リート側確認後に確定',options:{color:GRAY}}],
+    ['Case 2','ブリッジローン','貸付元本 × 金利 ＋ 手数料', {text:'リート側確認後に確定',options:{color:GRAY}}],
+    ['Case 3','リート／SPC参画','出資持分に応じた配当・NOI分配', {text:'リート側確認後に確定',options:{color:GRAY}}],
+    ['Case 4','ハイブリッド','アレンジフィー ＋ 一部出資リターン', {text:'リート側確認後に確定',options:{color:GRAY}}],
+  ]
+  kctable(s,rows,{x:ML, y:1.8, w:7.7, colW:[1.2,2.0,3.3,1.2], rowH:[0.42,0.72,0.72,0.72,0.72], fontSize:9.5, align:'left'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:8.65, y:1.8, w:CW-7.95, h:3.5, rectRadius:0.06, fill:{color:PEACHLT}, line:{color:CORAL,width:1}, shadow:sh()})
+  s.addText('リート側 確認待ち',{x:8.9, y:1.92, w:3.5, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:RED, margin:0})
+  s.addText([
+    {text:'KCフィー／報酬水準', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:8}},
+    {text:'参画主体：KC本体か KCリートか', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:8}},
+    {text:'リート側の収益目線（目標利回り）', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:8}},
+    {text:'寮アセットのリート適格性', options:{bullet:{indent:14}}},
+  ],{x:8.9, y:2.3, w:CW-8.25, h:2.9, fontFace:JP, fontSize:10, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addText('方向性：KCは六甲山山上事業全体に関与の意向。学生寮部分はKCリートでの参画可能性あり（二層構造で仮置き）。',
+    {x:ML, y:5.55, w:CW, h:0.6, fontFace:JP, fontSize:10, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  footer(s,9)
+}
+
+// ══════════ 11 リスクと対応方針（divider 08 → content）══════════
+divider(8)
 {
   const s=newContent('リスクと対応方針','主要リスクは特定済みで、いずれも初期段階（アレンジャー参画）では顕在化しにくく、事前確認・専門家相談により管理可能。')
   const rows=[
@@ -430,8 +487,8 @@ divider(7)
   footer(s,11)
 }
 
-// ══════════ 11 補助金制約と確認済事項（divider 08 → content）══════════
-divider(8)
+// ══════════ 12 補助金制約と確認済事項（divider 09 → content）══════════
+divider(9)
 {
   const s=newContent('補助金制約と確認済事項','対象は「大規模成長投資補助金」（経産省）。八光LR・補助金事務局への確認により、資金の流れと担保の実務条件は概ね整理済み。')
   // left: 制約
@@ -457,10 +514,27 @@ divider(8)
   footer(s,12)
 }
 
-// ══════════ 12 スケジュールと決裁（divider 09 → content）══════════
-divider(9)
+// ══════════ 13 5カ年スケジュールと決裁（divider 10 → content×2）══════════
+divider(10)
+// 5カ年スケジュール
 {
-  const s=newContent('想定スケジュールと決裁のお願い','本稟議のご承認後、STO事業者ヒアリングと八光LRへの追加確認を並行し、7月下旬に関与方針を判断する第2版を作成する。')
+  const s=newContent('5カ年スケジュール（ざっくり）','STO組成から開校後の運営・安定化までの大枠。起点はKC社内判断（Year 0）。六甲山キャンパス開校は2028年8月予定。')
+  const rows=[
+    [hcell('年度'), hcell('フェーズ'), hcell('主な内容',MAROON)],
+    ['Year 0','検討・設計','KC社内判断、八光LR確認、デジタル証券相談、スキーム仮決定'],
+    ['Year 1','組成・資金調達','SPC／信託／STO設計、契約、投資家募集、資金実行'],
+    ['Year 2','建設・開校準備','寮・学校施設整備、運営体制整備、入寮募集'],
+    ['Year 3','開校・初年度運営','稼働率検証、収支実績確認、投資家分配開始'],
+    ['Year 4〜5','安定運営・拡張','稼働率安定化、追加施設検討、Foundation／寄付連動、次案件展開'],
+  ]
+  kctable(s,rows,{x:ML, y:1.9, w:CW, colW:[1.6,2.6,7.73], rowH:[0.45,0.72,0.72,0.72,0.72,0.72], fontSize:11, align:'left'})
+  s.addText('※ 起点・年次は「開校基準」か「STO組成基準」かを擦り合わせて確定する（現状はKC社内判断＝Year 0で仮置き）。',
+    {x:ML, y:6.15, w:CW, h:0.4, fontFace:JP, fontSize:9, color:GRAY, valign:'top', margin:0})
+  footer(s,9)
+}
+// 次のアクションと決裁
+{
+  const s=newContent('次のアクションと決裁のお願い','本稟議のご承認後、STO事業者ヒアリングと八光LR・リート側への確認を並行し、7月下旬に関与方針を判断する第2版を作成する。')
   const steps=[
     ['7/7週','STO事業者ヒアリング','デジタル証券・Progmat・BOOSTRY等へ問い合わせ・初回ヒアリング'],
     ['7/10目途','初期スキーム案','A〜D案（アレンジャー／ブリッジ／貸付・出資）の初期スキーム案を作成'],
@@ -477,9 +551,9 @@ divider(9)
     y+=0.88
   })
   s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:y+0.02, w:CW, h:0.72, rectRadius:0.05, fill:{color:RED}})
-  s.addText('ご決裁のお願い：本件を新規事業案件として推進し、アレンジャー参画とヒアリング・専門家相談の実施をご承認いただきたい。',
+  s.addText('緒方様へのお願い：本件を新規事業案件として推進し、アレンジャー参画とヒアリング・専門家相談の実施を今月中にご判断いただきたい。',
     {x:ML+0.25, y:y+0.02, w:CW-0.5, h:0.72, fontFace:JP, fontSize:12, bold:true, color:WHITE, valign:'middle', margin:0})
-  footer(s,13)
+  footer(s,9)
 }
 
 // ══════════ 13 Appendix ══════════
