@@ -81,7 +81,7 @@ const CHAPTERS=[
   const s=pres.addSlide(); s.background={color:WHITE}
   s.addText('Index',{x:ML, y:0.55, w:CW, h:0.7, fontFace:SERIF, fontSize:30, bold:true, color:INK, margin:0})
   s.addShape(pres.shapes.LINE,{x:ML, y:1.32, w:CW, h:0, line:{color:GRAYLT, width:1}})
-  const pages=[3,6,8,11,13,15,17,19,21]
+  const pages=[3,6,8,11,13,19,21,23,25]
   let y=1.62
   CHAPTERS.forEach((c,i)=>{
     badge(s, ML, y, '0'+(i+1), 0.46)
@@ -283,42 +283,113 @@ divider(4)
   footer(s,8)
 }
 
-// ══════════ 08 事業性・収益の論点（divider 05 → content）══════════
+// ══════════ 08 事業性・収益の論点（divider 05 → content×5）══════════
 divider(5)
+// 5a 現状整理
 {
-  const s=newContent('事業性・収益の論点','初期情報では原資に不足懸念があり、収益設計が本件の最重要論点。STO事業者は固定賃のみでは厳しく、CPI・固定資産税連動の変動賃料付与を推奨している。')
-  // left: the gap
-  s.addText('原資の論点（初期仮説）',{x:ML, y:1.8, w:6, h:0.35, fontFace:JP, fontSize:12, bold:true, color:INK, margin:0})
-  const gaps=[
-    ['必要分配原資','20億円 × 7％','年 1.4億円', RED],
-    ['学生寮収入（初期情報）','年間','700万円', INK],
+  const s=newContent('事業性①｜学生寮収支の現状整理','寮単体の正式な収支シミュレーションは未作成。ただし確認済みの前提を用いれば、稟議用の仮試算・逆算は現時点でも作成できる。')
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:1.8, w:5.55, h:2.55, rectRadius:0.06, fill:{color:PEACHLT}, line:{color:CORAL,width:1}, shadow:sh()})
+  s.addText('現状の整理（7/6 吉村レンニ氏の確認）',{x:ML+0.25, y:1.92, w:5.05, h:0.3, fontFace:JP, fontSize:11, bold:true, color:RED, margin:0})
+  s.addText([
+    {text:'「学生寮収入700万円」の母体を確認 → 実態は顧客単価 1人あたり年間350万円。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:6}},
+    {text:'そこから食費・運営人件費等の原価と、八光LRの利益を控除した後に投資配当原資が出る構造。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:6}},
+    {text:'「寮単体の収支はまだできていない」と明言（6/25時点でも学費全体と寮単体は未分離）。', options:{bullet:{indent:14}}},
+  ],{x:ML+0.25, y:2.3, w:5.05, h:2.0, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addText('現時点で仮試算に使える情報',{x:6.5, y:1.8, w:6, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
+  const rows=[
+    [hcell('項目'), hcell('現時点の情報'), hcell('試算での使い方',MAROON)],
+    ['顧客単価','1人あたり 年間350万円','年間売上の上限試算'],
+    ['収容人数','110名宿泊可能（前提）','満室時売上の試算'],
+    ['教員室','5名／5室の扱いが論点','課金対象からの除外可能性'],
+    ['旧前提','年間収入700万円','売上/NOI不明・扱い注意'],
+    ['投資家利回り','年7％前提','必要配当原資の逆算'],
+    ['ST手数料','約4％（調整可）','初期コスト／グロスアップ'],
+    ['STO規模','20億円程度がミニマム','単体で規模が足りるか要確認'],
   ]
-  let gy=2.2
-  gaps.forEach(g=>{
-    s.addShape(pres.shapes.RECTANGLE,{x:ML, y:gy, w:5.7, h:1.0, fill:{color:WHITE}, line:{color:GRAYLT,width:1}, shadow:sh()})
-    s.addText(g[0],{x:ML+0.2, y:gy+0.12, w:5.3, h:0.3, fontFace:JP, fontSize:10.5, color:GRAY, margin:0})
-    s.addText([{text:g[1]+'　',options:{fontSize:12,color:GRAY}},{text:g[2],options:{fontSize:22,bold:true,color:g[3]}}],
-      {x:ML+0.2, y:gy+0.42, w:5.3, h:0.5, fontFace:JP, valign:'middle', margin:0})
-    gy+=1.12
+  kctable(s,rows,{x:6.5, y:2.15, w:6.1, colW:[1.5,2.5,2.1], rowH:[0.4,0.42,0.42,0.42,0.42,0.42,0.42,0.42], fontSize:9.5, align:'left'})
+  footer(s,9)
+}
+// 5b 売上上限
+{
+  const s=newContent('事業性②｜年間売上の上限試算','確認済みの「1人350万円」を用いた満室時の年間粗売上。ただしこれは売上の上限であり、投資家配当原資ではない。')
+  const cases=[['110名全員が課金対象','350万円 × 110名','3.85億円',RED],['教員5名を除く105名','350万円 × 105名','3.675億円',CORAL],['保守的に100名','350万円 × 100名','3.5億円',INK]]
+  const cw=(CW-0.6)/3
+  cases.forEach((c,i)=>{
+    const x=ML+i*(cw+0.3), y=1.95
+    s.addShape(pres.shapes.RECTANGLE,{x, y, w:cw, h:2.0, fill:{color:i===0?PEACHLT:WHITE}, line:{color:GRAYLT,width:1}, shadow:sh()})
+    s.addText(c[0],{x:x+0.2, y:y+0.18, w:cw-0.4, h:0.55, fontFace:JP, fontSize:11.5, bold:true, color:INK, valign:'top', margin:0})
+    s.addText(c[1],{x:x+0.2, y:y+0.85, w:cw-0.4, h:0.3, fontFace:JP, fontSize:10.5, color:GRAY, margin:0})
+    s.addText(c[2],{x:x+0.2, y:y+1.15, w:cw-0.4, h:0.7, fontFace:JP, fontSize:30, bold:true, color:c[3], valign:'middle', margin:0})
   })
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:gy, w:5.7, h:0.85, rectRadius:0.05, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
-  s.addText('寮収入のみでは原資が大幅に不足する可能性が高い。学校全体CF・固定賃料設計の確認が必須。',
-    {x:ML+0.2, y:gy, w:5.3, h:0.85, fontFace:JP, fontSize:11, bold:true, color:RED, valign:'middle', margin:0})
-  // right: must-confirm + vendor view
-  s.addText('確認すべき事項',{x:7.0, y:1.8, w:6, h:0.35, fontFace:JP, fontSize:12, bold:true, color:INK, margin:0})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:4.25, w:CW, h:0.8, rectRadius:0.05, fill:{color:GRAYXL}, line:{color:GRAYLT,width:1}})
+  s.addText([{text:'注意：',options:{bold:true,color:RED}},{text:'これは売上の上限。ここから食費・運営人件費等の原価と八光LRの利益を控除した後に、投資配当に回せる金額が出る。',options:{color:INK}}],
+    {x:ML+0.25, y:4.25, w:CW-0.5, h:0.8, fontFace:JP, fontSize:11, valign:'middle', margin:0})
+  s.addText('※ NLCS神戸の六甲山・寄宿舎キャンパスは2028年8月開校予定（公開情報）。寄宿舎定員は非公開のため「110名」は社内前提であり、稼働率・入寮率の設定が別途必要。',
+    {x:ML, y:5.25, w:CW, h:0.7, fontFace:JP, fontSize:9, color:GRAY, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  footer(s,9)
+}
+// 5c 配当原資逆算
+{
+  const s=newContent('事業性③｜投資家配当原資の逆算','年利7％を前提とすると、調達額に応じ必要な年間配当原資が決まる。売上のうち何％を分配に回せるかが成立性の目線。')
+  s.addText('調達額別｜年7％で必要な年間配当',{x:ML, y:1.85, w:6, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
+  const t1=[[hcell('調達額'), hcell('年間必要配当',MAROON)],['20億円','1.40億円'],['18億円','1.26億円'],['10億円','7,000万円'],['5億円','3,500万円'],['1億円','700万円']]
+  kctable(s,t1,{x:ML, y:2.2, w:5.4, colW:[2.7,2.7], rowH:[0.42,0.44,0.44,0.44,0.44,0.44], fontSize:11, align:'center'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:5.15, w:5.4, h:1.0, rectRadius:0.05, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
+  s.addText('もし「700万円」が寮単体の分配可能CFなら、年7％で支えられる調達額は約1億円に留まる。',
+    {x:ML+0.2, y:5.15, w:5.0, h:1.0, fontFace:JP, fontSize:10.5, bold:true, color:RED, valign:'middle', margin:0})
+  s.addText('必要な分配可能率（20億円・年7％＝1.4億円）',{x:6.5, y:1.85, w:6.1, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
+  const t2=[[hcell('稼働率'), hcell('年間粗売上'), hcell('必要分配可能率',MAROON)],['100%','3.85億円','36.4%'],['90%','3.465億円','40.4%'],['80%','3.08億円','45.5%']]
+  kctable(s,t2,{x:6.5, y:2.2, w:6.1, colW:[1.6,2.4,2.1], rowH:[0.42,0.55,0.55,0.55], fontSize:11, align:'center'})
+  s.addText('売上の36.4％以上を投資家配当原資として残せるかが、20億円STO成立の一つの目線。',
+    {x:6.5, y:4.4, w:6.1, h:0.6, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  footer(s,9)
+}
+// 5d 感度分析 + 手数料
+{
+  const s=newContent('事業性④｜感度分析と手数料の影響','分配可能率と稼働率で調達可能額を逆算。満室に近く分配率35〜40％を確保できれば18〜20億円規模の説明余地がある。')
+  s.addText('分配可能率別｜調達可能額（単価350万・110名・年7％）',{x:ML, y:1.8, w:8, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
+  const t=[[hcell('稼働率'), hcell('粗売上'), hcell('分配率30％'), hcell('分配率35％'), hcell('分配率40％',MAROON)],
+    ['80%','3.08億円','約13.2億円','約15.4億円','約17.6億円'],
+    ['90%','3.465億円','約14.85億円','約17.33億円','約19.8億円'],
+    ['100%','3.85億円','約16.5億円','約19.25億円','約22.0億円']]
+  kctable(s,t,{x:ML, y:2.15, w:CW, colW:[1.6,2.2,2.7,2.7,2.73], rowH:[0.45,0.5,0.5,0.5], fontSize:11, align:'center'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:ML, y:4.35, w:7.35, h:1.45, rectRadius:0.06, fill:{color:GRAYXL}, line:{color:GRAYLT,width:1}})
+  s.addText('示唆',{x:ML+0.2, y:4.45, w:5, h:0.3, fontFace:JP, fontSize:11, bold:true, color:RED, margin:0})
   s.addText([
-    {text:'7％利回りは誰に対するものか（KC／STO投資家／両方）', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:5}},
-    {text:'原資は学生寮収入のみか、学校全体収入を含められるか', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:5}},
-    {text:'八光エルアールによる固定賃料・保証の有無', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:5}},
-    {text:'CPI連動・固定資産税連動等の変動賃料設計は可能か', options:{bullet:{indent:14}}},
-  ],{x:7.0, y:2.2, w:CW-6.3, h:1.9, fontFace:JP, fontSize:11, color:INK, valign:'top', margin:0})
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.0, y:4.15, w:CW-6.3, h:1.75, rectRadius:0.06, fill:{color:GRAYXL}, line:{color:GRAYLT,width:1}})
-  s.addText('STO事業者（デジタル証券）ヒアリング要旨',{x:7.2, y:4.28, w:5.5, h:0.35, fontFace:JP, fontSize:11, bold:true, color:RED, margin:0})
+    {text:'満室に近く、分配可能率35〜40％を確保できれば18〜20億円規模の説明余地。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:6}},
+    {text:'分配率30％程度なら20億円はやや厳しく、追加施設・学校全体CF・固定賃料・保証・Foundation連動での補完が必要。', options:{bullet:{indent:14}}},
+  ],{x:ML+0.2, y:4.78, w:6.95, h:1.0, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:8.3, y:4.35, w:CW-7.6, h:1.45, rectRadius:0.06, fill:{color:PEACHLT}, line:{color:CORAL,width:1}})
+  s.addText('手数料4％の影響（仮置き・要確認）',{x:8.5, y:4.45, w:4, h:0.3, fontFace:JP, fontSize:10.5, bold:true, color:RED, margin:0})
   s.addText([
-    {text:'物件20億円程度が組成のミニマム水準。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:4}},
-    {text:'学生寮＋任意追加施設の一本化は可能。ただし固定賃のみは厳しく、CPI／固都税連動の変動を付けたい。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:4}},
-    {text:'手数料（4％想定）は案件に応じ調整可。', options:{bullet:{indent:14}}},
-  ],{x:7.2, y:4.62, w:CW-6.7, h:1.2, fontFace:JP, fontSize:10, color:INK, valign:'top', lineSpacingMultiple:1.02, margin:0})
+    {text:'20億円発行時の4％手数料 ＝ 8,000万円', options:{breakLine:true, paraSpaceAfter:4}},
+    {text:'手取り20億円の確保には約20.83億円の発行が必要', options:{}},
+  ],{x:8.5, y:4.8, w:CW-8.1, h:1.0, fontFace:JP, fontSize:10, color:INK, valign:'top', lineSpacingMultiple:1.1, margin:0})
+  s.addText('※ デジタル証券：固定賃のみは厳しくCPI／固都税連動の変動賃料を推奨。18〜20億円が組成検討ライン、手数料は案件に応じ調整可。',
+    {x:ML, y:5.95, w:CW, h:0.4, fontFace:JP, fontSize:9, color:GRAY, valign:'top', margin:0})
+  footer(s,9)
+}
+// 5e 追加確認事項と結論
+{
+  const s=newContent('事業性⑤｜追加確認事項と結論','正式な寮単体PLの確定には以下が不足。八光LR（池田社長）へ最優先で確認する。')
+  s.addText('不足している情報',{x:ML, y:1.8, w:6, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:INK, margin:0})
+  const t=[[hcell('区分'), hcell('不足情報')],
+    ['売上','350万は寮費のみか学費込みか／課金対象人数（教員5名）／稼働率・入寮率'],
+    ['費用','食費・寮運営人件費・水光熱・清掃警備・修繕・保険・PM・固都税'],
+    ['利益','八光LRとして残す利益水準'],
+    ['投資額','学生寮部分（寄宿舎EF棟）の施工費'],
+    ['契約','寮収入の帰属と分配主体／学校・八光LR・SPC間の賃料・ML契約']]
+  kctable(s,t,{x:ML, y:2.15, w:6.2, colW:[1.05,5.15], rowH:[0.4,0.72,0.72,0.5,0.5,0.72], fontSize:9.5, align:'left'})
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.05, y:1.8, w:CW-6.35, h:3.55, rectRadius:0.06, fill:{color:PEACHLT}, line:{color:CORAL,width:1}, shadow:sh()})
+  s.addText('現時点の結論（資料反映方針）',{x:7.3, y:1.95, w:5, h:0.3, fontFace:JP, fontSize:11.5, bold:true, color:RED, margin:0})
+  s.addText([
+    {text:'寮単体の正式PLは未確定であり、投資判断に足る数値は未整備。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'一方、単価350万円・最大110名を置くと満室時の年間粗売上は最大 約3.85億円。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'20億円STO・年7％には年1.4億円の配当原資が必要 → 売上の約36.4％以上を分配可能CFとして確保できるかが成立の目線。', options:{breakLine:true, bullet:{indent:14}, paraSpaceAfter:7}},
+    {text:'今後の確認ポイント：原価・八光LR利益・寮施工費・賃料設計・稼働率。', options:{bullet:{indent:14}}},
+  ],{x:7.3, y:2.3, w:CW-6.85, h:2.95, fontFace:JP, fontSize:10.5, color:INK, valign:'top', lineSpacingMultiple:1.05, margin:0})
+  s.addText('八光LR（池田社長）確認事項：①350万の内訳 ②課金対象人数 ③700万の定義 ④年間原価 ⑤八光LR利益水準 ⑥寮施工費 ⑦賃料・保証設計 ⑧初年度〜3年目の入寮率',
+    {x:ML, y:5.88, w:CW, h:0.8, fontFace:JP, fontSize:9.5, color:INK, valign:'top', lineSpacingMultiple:1.1, margin:0})
   footer(s,9)
 }
 
